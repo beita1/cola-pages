@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>产研迭代流程规范 · v0.1</title>
+<style>
+/* ============================================================
+   THEME SYSTEM
+   ============================================================ */
+body, body[data-theme="cola-dark"] {
+  --bg-window:   #0b0c10;
+  --bg-pane:     #0f1117;
+  --bg-pane-2:   #14161e;
+  --bg-titlebar: #161922;
+  --line:        #1f2230;
+  --line-2:      #2a2e3e;
+  --line-3:      #3d4255;
+  --fg:          #e6e8f0;
+  --fg-2:        #b6bac8;
+  --fg-3:        #7d8194;
+  --fg-4:        #4f5466;
+  --accent:      #ff7a45;
+  --accent-soft: rgba(255, 122, 69, 0.14);
+  --accent-line: rgba(255, 122, 69, 0.5);
+  --node-done:   #5dd39e;
+  --node-gate:   #6db8ff;
+  --node-fail:   #f47272;
+  --warn-fg:     #f5c451;
+}
+
+body[data-theme="tokyo-night"] {
+  --bg-window:   #1a1b26;
+  --bg-pane:     #1f2033;
+  --bg-pane-2:   #292e42;
+  --bg-titlebar: #16161e;
+  --line:        #2a2c3d;
+  --line-2:      #3b3e54;
+  --line-3:      #545978;
+  --fg:          #c0caf5;
+  --fg-2:        #a9b1d6;
+  --fg-3:        #6e7591;
+  --fg-4:        #414868;
+  --accent:      #7aa2f7;
+  --accent-soft: rgba(122, 162, 247, 0.14);
+  --accent-line: rgba(122, 162, 247, 0.5);
+  --node-done:   #9ece6a;
+  --node-gate:   #7dcfff;
+  --node-fail:   #f7768e;
+  --warn-fg:     #e0af68;
+}
+
+body[data-theme="solarized-dark"] {
+  --bg-window:   #002b36;
+  --bg-pane:     #073642;
+  --bg-pane-2:   #094352;
+  --bg-titlebar: #00212b;
+  --line:        #14424f;
+  --line-2:      #1e5263;
+  --line-3:      #2e6677;
+  --fg:          #fdf6e3;
+  --fg-2:        #93a1a1;
+  --fg-3:        #586e75;
+  --fg-4:        #34555c;
+  --accent:      #b58900;
+  --accent-soft: rgba(181, 137, 0, 0.18);
+  --accent-line: rgba(181, 137, 0, 0.55);
+  --node-done:   #859900;
+  --node-gate:   #268bd2;
+  --node-fail:   #dc322f;
+  --warn-fg:     #b58900;
+}
+
+body[data-theme="gruvbox-dark"] {
+  --bg-window:   #282828;
+  --bg-pane:     #32302f;
+  --bg-pane-2:   #3c3836;
+  --bg-titlebar: #1d2021;
+  --line:        #3c3836;
+  --line-2:      #504945;
+  --line-3:      #665c54;
+  --fg:          #ebdbb2;
+  --fg-2:        #d5c4a1;
+  --fg-3:        #a89984;
+  --fg-4:        #7c6f64;
+  --accent:      #fabd2f;
+  --accent-soft: rgba(250, 189, 47, 0.14);
+  --accent-line: rgba(250, 189, 47, 0.55);
+  --node-done:   #b8bb26;
+  --node-gate:   #83a598;
+  --node-fail:   #fb4934;
+  --warn-fg:     #fabd2f;
+}
+
+body[data-theme="light"] {
+  --bg-window:   #fafafa;
+  --bg-pane:     #ffffff;
+  --bg-pane-2:   #f4f5f7;
+  --bg-titlebar: #f0f0f2;
+  --line:        #e2e4e9;
+  --line-2:      #d1d5db;
+  --line-3:      #b0b5c0;
+  --fg:          #1a1c22;
+  --fg-2:        #4a4e5a;
+  --fg-3:        #7a7f8e;
+  --fg-4:        #b0b5c0;
+  --accent:      #e85d20;
+  --accent-soft: rgba(232, 93, 32, 0.08);
+  --accent-line: rgba(232, 93, 32, 0.4);
+  --node-done:   #16a34a;
+  --node-gate:   #2563eb;
+  --node-fail:   #dc2626;
+  --warn-fg:     #ca8a04;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg-window);
+  color: var(--fg);
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "PingFang SC", sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { opacity: 0.8; }
+code, pre, .mono {
+  font-family: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+kbd {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10.5px;
+  background: var(--bg-pane-2);
+  border: 1px solid var(--line-2);
+  border-bottom-width: 2px;
+  padding: 1px 6px;
+  border-radius: 4px;
+  color: var(--fg-2);
+}
+
+/* ============================================================
+   DOC CHROME — Sticky nav
+   ============================================================ */
+.doc-top {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(11, 12, 16, 0.82);
+  backdrop-filter: saturate(1.5) blur(16px);
+  -webkit-backdrop-filter: saturate(1.5) blur(16px);
+  border-bottom: 1px solid var(--line);
+  height: 48px;
+  display: flex; align-items: center;
+  padding: 0 24px;
+}
+body[data-theme="light"] .doc-top {
+  background: rgba(250, 250, 250, 0.88);
+}
+.doc-top .lead {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 12px; color: var(--fg-2);
+  display: flex; align-items: center; gap: 10px;
+  white-space: nowrap;
+}
+.doc-top .lead .led {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent-line);
+}
+.doc-top nav { margin-left: auto; display: flex; gap: 4px; flex-wrap: wrap; }
+.doc-top nav a {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 11px; letter-spacing: 0.06em;
+  color: var(--fg-3); padding: 6px 10px;
+  text-transform: uppercase;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+}
+.doc-top nav a:hover { color: var(--fg); background: var(--bg-pane); }
+.theme-picker {
+  display: flex; gap: 4px; margin-left: 18px;
+  padding: 3px; border: 1px solid var(--line);
+  border-radius: 5px;
+  flex-shrink: 0;
+}
+.theme-picker button {
+  background: transparent; border: none;
+  color: var(--fg-4);
+  font-family: ui-monospace, monospace; font-size: 10.5px;
+  padding: 3px 7px; border-radius: 3px; cursor: pointer;
+  letter-spacing: 0.04em;
+  transition: color 0.15s, background 0.15s;
+}
+.theme-picker button:hover { color: var(--fg-2); }
+.theme-picker button.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ============================================================
+   MAIN CONTENT
+   ============================================================ */
+main { max-width: 960px; margin: 0 auto; padding: 48px 32px 120px; }
+section { margin: 0 0 80px; }
+
+h1 {
+  font-size: 34px; line-height: 1.2;
+  margin: 0 0 14px; letter-spacing: -0.015em;
+  font-weight: 700; color: var(--fg);
+}
+h2 {
+  font-family: ui-monospace, "SF Mono", monospace;
+  font-size: 11px; letter-spacing: 0.18em;
+  color: var(--fg-3); margin: 0 0 28px;
+  font-weight: 500; text-transform: uppercase;
+  display: flex; align-items: center; gap: 12px;
+}
+h2::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+h3 { font-size: 18px; margin: 0 0 10px; font-weight: 600; }
+h4 {
+  font-size: 12px; margin: 0 0 8px;
+  font-weight: 600; color: var(--fg);
+  font-family: ui-monospace, monospace; letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+p { color: var(--fg-2); margin: 0 0 12px; }
+p.lead { font-size: 16px; max-width: 780px; line-height: 1.65; }
+
+/* hero */
+.hero {
+  padding: 52px 0 28px;
+  border-bottom: 1px dashed var(--line);
+  margin-bottom: 56px;
+}
+.hero .tag {
+  display: inline-block;
+  font-family: ui-monospace, monospace; font-size: 10.5px;
+  letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--accent); padding: 4px 10px;
+  border: 1px solid var(--accent-line);
+  border-radius: 100px; margin-bottom: 18px;
+}
+.hero .meta {
+  display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px;
+  font-family: ui-monospace, monospace; font-size: 11.5px; color: var(--fg-3);
+}
+.hero .meta span::before { content: "—"; margin-right: 8px; color: var(--fg-4); }
+
+/* callout */
+.callout {
+  border-left: 2px solid var(--accent);
+  background: var(--accent-soft);
+  padding: 14px 18px;
+  color: var(--fg-2); font-size: 13.5px;
+  line-height: 1.65; margin: 18px 0 28px;
+  border-radius: 0 4px 4px 0;
+}
+.callout strong { color: var(--fg); }
+.callout.neutral {
+  border-left-color: var(--line-3);
+  background: var(--bg-pane);
+}
+
+/* ============================================================
+   FLOWCHART — Interactive SVG-like flow using pure CSS/HTML
+   ============================================================ */
+.flow-container {
+  margin: 24px 0 40px;
+}
+.flow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+}
+.flow-node {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+}
+.flow-node .node-box {
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  padding: 16px 20px;
+  background: var(--bg-pane);
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+  user-select: none;
+}
+.flow-node .node-box:hover {
+  border-color: var(--accent-line);
+  box-shadow: 0 0 20px var(--accent-soft);
+}
+.flow-node.active .node-box {
+  border-color: var(--accent);
+  box-shadow: 0 0 24px var(--accent-soft);
+}
+.flow-node .node-header {
+  display: flex; align-items: center; gap: 12px;
+}
+.flow-node .node-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700;
+  flex-shrink: 0;
+  font-family: ui-monospace, monospace;
+}
+.flow-node .node-icon.produce { background: var(--accent-soft); color: var(--accent); border: 1px solid var(--accent-line); }
+.flow-node .node-icon.review { background: rgba(107, 184, 255, 0.12); color: var(--node-gate); border: 1px solid rgba(107, 184, 255, 0.4); }
+.flow-node .node-icon.dev { background: rgba(93, 211, 158, 0.1); color: var(--node-done); border: 1px solid rgba(93, 211, 158, 0.35); }
+.flow-node .node-icon.ship { background: rgba(245, 196, 81, 0.1); color: var(--warn-fg); border: 1px solid rgba(245, 196, 81, 0.35); }
+.flow-node .node-icon.retro { background: rgba(200, 200, 220, 0.08); color: var(--fg-3); border: 1px solid var(--line-2); }
+.flow-node .node-title {
+  font-size: 14px; font-weight: 600; color: var(--fg);
+}
+.flow-node .node-subtitle {
+  font-size: 11.5px; color: var(--fg-3); margin-top: 2px;
+  font-family: ui-monospace, monospace;
+}
+.flow-node .expand-hint {
+  margin-left: auto;
+  font-size: 11px; color: var(--fg-4);
+  font-family: ui-monospace, monospace;
+  transition: color 0.2s;
+}
+.flow-node.active .expand-hint { color: var(--accent); }
+
+.flow-node .node-detail {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease, opacity 0.25s ease;
+  opacity: 0;
+  padding: 0 20px;
+  background: var(--bg-pane);
+  border-radius: 0 0 8px 8px;
+  border: 1px solid transparent;
+  border-top: none;
+}
+.flow-node.active .node-detail {
+  max-height: 800px;
+  opacity: 1;
+  padding: 16px 20px;
+  border-color: var(--accent);
+  border-top: 1px dashed var(--line-2);
+}
+.flow-node .node-detail p { font-size: 13px; margin: 0 0 10px; }
+.flow-node .node-detail .role-table {
+  width: 100%; border-collapse: collapse; margin: 10px 0;
+  font-size: 12.5px;
+}
+.flow-node .node-detail .role-table th,
+.flow-node .node-detail .role-table td {
+  padding: 6px 10px; text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.flow-node .node-detail .role-table th {
+  font-family: ui-monospace, monospace;
+  font-size: 10px; color: var(--fg-3);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 500;
+}
+.flow-node .node-detail .tag-inline {
+  display: inline-block;
+  font-size: 10.5px; padding: 2px 7px;
+  border-radius: 3px; font-family: ui-monospace, monospace;
+}
+.flow-node .node-detail .tag-inline.required {
+  background: rgba(255, 122, 69, 0.1); color: var(--accent);
+  border: 1px solid var(--accent-line);
+}
+.flow-node .node-detail .tag-inline.async {
+  background: rgba(107, 184, 255, 0.08); color: var(--node-gate);
+  border: 1px solid rgba(107, 184, 255, 0.3);
+}
+.flow-node .node-detail ul {
+  padding-left: 18px; margin: 8px 0;
+}
+.flow-node .node-detail li {
+  font-size: 13px; color: var(--fg-2); margin-bottom: 5px;
+}
+.flow-node .node-detail .reject {
+  margin-top: 10px; padding: 8px 12px;
+  background: rgba(244, 114, 114, 0.06);
+  border: 1px dashed rgba(244, 114, 114, 0.3);
+  border-radius: 4px;
+  font-size: 12px; color: var(--node-fail);
+}
+
+/* Connector arrows */
+.flow-arrow {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 6px 0;
+  color: var(--fg-4);
+}
+.flow-arrow .line {
+  width: 1px; height: 20px;
+  background: var(--line-2);
+}
+.flow-arrow .arrow-label {
+  font-family: ui-monospace, monospace;
+  font-size: 10px; color: var(--fg-4);
+  letter-spacing: 0.08em;
+  margin: 4px 0;
+}
+.flow-arrow svg {
+  width: 10px; height: 10px;
+}
+.flow-arrow svg path {
+  fill: var(--line-2);
+}
+
+/* ============================================================
+   FORMAT SPEC — Cards
+   ============================================================ */
+.spec-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+.spec-card {
+  border: 1px solid var(--line); border-radius: 8px;
+  padding: 22px 24px;
+  background: var(--bg-pane);
+  transition: border-color 0.2s;
+}
+.spec-card:hover { border-color: var(--line-2); }
+.spec-card .card-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px dashed var(--line);
+}
+.spec-card .card-num {
+  font-family: ui-monospace, monospace; font-size: 10.5px;
+  color: var(--accent); letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  padding: 2px 8px;
+  border-radius: 100px;
+  flex-shrink: 0;
+}
+.spec-card h3 { font-size: 16px; margin: 0; }
+.spec-card .card-body { font-size: 13.5px; color: var(--fg-2); line-height: 1.7; }
+.spec-card .card-body ul { padding-left: 18px; margin: 8px 0; }
+.spec-card .card-body li { margin-bottom: 6px; }
+.spec-card .card-body strong { color: var(--fg); }
+
+/* field table */
+.field-table {
+  width: 100%; border-collapse: collapse; margin: 12px 0;
+  font-size: 13px;
+}
+.field-table th, .field-table td {
+  padding: 8px 12px; text-align: left;
+  border-bottom: 1px solid var(--line);
+}
+.field-table th {
+  font-family: ui-monospace, monospace;
+  font-size: 10.5px; color: var(--fg-3);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  font-weight: 500;
+}
+
+/* tradeoff example */
+.tradeoff-example {
+  border: 1px solid var(--line); border-radius: 6px;
+  overflow: hidden; margin: 14px 0;
+}
+.tradeoff-example .chosen {
+  padding: 12px 16px;
+  background: rgba(93, 211, 158, 0.05);
+  border-bottom: 1px solid var(--line);
+}
+.tradeoff-example .chosen .label {
+  font-family: ui-monospace, monospace; font-size: 10px;
+  color: var(--node-done); letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.tradeoff-example .alt {
+  padding: 12px 16px;
+  background: rgba(244, 114, 114, 0.03);
+}
+.tradeoff-example .alt .label {
+  font-family: ui-monospace, monospace; font-size: 10px;
+  color: var(--node-fail); letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 4px;
+}
+.tradeoff-example p { margin: 0; font-size: 13px; }
+
+/* checklist */
+.checklist {
+  margin: 20px 0;
+  padding: 0; list-style: none;
+}
+.checklist li {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+  font-size: 13.5px; color: var(--fg-2);
+}
+.checklist li:last-child { border-bottom: none; }
+.checklist li .ck {
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--line-2);
+  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+  .doc-top { padding: 0 14px; }
+  .doc-top nav { display: none; }
+  main { padding: 32px 16px 80px; }
+  .flow-node .node-box { padding: 12px 14px; }
+}
+</style>
+</head>
+<body data-theme="cola-dark">
+
+<!-- ============================================================
+     NAV BAR
+     ============================================================ -->
+<header class="doc-top">
+  <div class="lead">
+    <span class="led"></span>
+    产研迭代流程规范
+  </div>
+  <nav>
+    <a href="#flow">流程</a>
+    <a href="#format">文档格式</a>
+    <a href="#checklist">准入门槛</a>
+  </nav>
+  <div class="theme-picker">
+    <button class="on" onclick="setTheme('cola-dark')">Cola</button>
+    <button onclick="setTheme('tokyo-night')">Tokyo</button>
+    <button onclick="setTheme('solarized-dark')">Solar</button>
+    <button onclick="setTheme('gruvbox-dark')">Gruvbox</button>
+    <button onclick="setTheme('light')">Light</button>
+  </div>
+</header>
+
+<main>
+
+<!-- ============================================================
+     HERO
+     ============================================================ -->
+<section class="hero">
+  <span class="tag">process spec</span>
+  <h1>产研迭代流程规范</h1>
+  <p class="lead">
+    从 product-design.html 产出到上线复盘，五个节点，两道评审关卡，确保设计意图不在落地过程中走形。
+  </p>
+  <div class="meta">
+    <span>v0.1</span>
+    <span>2026-06-02</span>
+  </div>
+</section>
+
+<!-- ============================================================
+     SECTION 1: 迭代流程
+     ============================================================ -->
+<section id="flow">
+  <h2>一 · 迭代流程</h2>
+
+  <div class="callout">
+    <strong>点击下方任意节点</strong> 展开该步骤的角色分工、评审维度和退回机制。
+  </div>
+
+  <div class="flow-container">
+    <div class="flow">
+
+      <!-- Node 1: Product Design 产出 -->
+      <div class="flow-node" id="node-produce">
+        <div class="node-box" onclick="toggleNode('node-produce')">
+          <div class="node-header">
+            <div class="node-icon produce">P</div>
+            <div>
+              <div class="node-title">product-design.html 产出</div>
+              <div class="node-subtitle">任何人均可发起</div>
+            </div>
+            <span class="expand-hint">▸ 展开</span>
+          </div>
+        </div>
+        <div class="node-detail">
+          <p>遵循第二章格式规范，产出自包含的 <code>product-design.html</code> 文档。任何团队成员均可发起——不限于 PM。</p>
+          <ul>
+            <li>格式需满足「准入门槛 Checklist」</li>
+            <li>包含 Hero、设计原则、Mockup、Tradeoff、待决问题</li>
+            <li>产出后自动进入 Review 1</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="flow-arrow">
+        <div class="line"></div>
+        <svg viewBox="0 0 10 10"><path d="M5 0 L10 5 L5 10 L5 7 L0 7 L0 3 L5 3 Z" transform="rotate(90 5 5)"/></svg>
+      </div>
+
+      <!-- Node 2: Review 1 -->
+      <div class="flow-node" id="node-review1">
+        <div class="node-box" onclick="toggleNode('node-review1')">
+          <div class="node-header">
+            <div class="node-icon review">R1</div>
+            <div>
+              <div class="node-title">Review 1 · 设计评审</div>
+              <div class="node-subtitle">gate — 不通过则打回</div>
+            </div>
+            <span class="expand-hint">▸ 展开</span>
+          </div>
+        </div>
+        <div class="node-detail">
+          <table class="role-table">
+            <thead><tr><th>角色</th><th>参与方式</th></tr></thead>
+            <tbody>
+              <tr><td>product-design 产出者</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>具体 builder</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>CPO</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>其他联创</td><td><span class="tag-inline async">异步 review</span></td></tr>
+              <tr><td>soul team</td><td><span class="tag-inline async">异步 review</span></td></tr>
+              <tr><td>交互工程师</td><td><span class="tag-inline async">异步 review</span></td></tr>
+            </tbody>
+          </table>
+          <p><strong>评审维度：</strong></p>
+          <ul>
+            <li>设计是否合理</li>
+            <li>需求边界是否清晰</li>
+            <li>有无歧义或遗漏</li>
+          </ul>
+          <div class="reject">
+            <strong>不通过：</strong>打回修改，重新提交 Review 1
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="flow-arrow">
+        <div class="line"></div>
+        <span class="arrow-label">通过</span>
+        <svg viewBox="0 0 10 10"><path d="M5 0 L10 5 L5 10 L5 7 L0 7 L0 3 L5 3 Z" transform="rotate(90 5 5)"/></svg>
+      </div>
+
+      <!-- Node 3: 开发 -->
+      <div class="flow-node" id="node-dev">
+        <div class="node-box" onclick="toggleNode('node-dev')">
+          <div class="node-header">
+            <div class="node-icon dev">D</div>
+            <div>
+              <div class="node-title">开发</div>
+              <div class="node-subtitle">强依赖文档，改动必须回写文档</div>
+            </div>
+            <span class="expand-hint">▸ 展开</span>
+          </div>
+        </div>
+        <div class="node-detail">
+          <p>以通过 Review 1 的 <code>product-design.html</code> 为<strong>唯一设计依据</strong>进行开发。</p>
+          <ul>
+            <li><strong>强依赖文档</strong> — 开发过程中所有改动必须在 product-design.html 上有所体现</li>
+            <li>不接受口头需求变更</li>
+            <li><strong>小改动</strong>：更新文档，继续开发</li>
+            <li><strong>大改动</strong>：更新文档后重新走 Review 1</li>
+            <li>开发完成后进入 Review 2</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="flow-arrow">
+        <div class="line"></div>
+        <svg viewBox="0 0 10 10"><path d="M5 0 L10 5 L5 10 L5 7 L0 7 L0 3 L5 3 Z" transform="rotate(90 5 5)"/></svg>
+      </div>
+
+      <!-- Node 4: Review 2 -->
+      <div class="flow-node" id="node-review2">
+        <div class="node-box" onclick="toggleNode('node-review2')">
+          <div class="node-header">
+            <div class="node-icon review">R2</div>
+            <div>
+              <div class="node-title">Review 2 · 上线前评审</div>
+              <div class="node-subtitle">gate — 全员强共识</div>
+            </div>
+            <span class="expand-hint">▸ 展开</span>
+          </div>
+        </div>
+        <div class="node-detail">
+          <table class="role-table">
+            <thead><tr><th>角色</th><th>参与方式</th></tr></thead>
+            <tbody>
+              <tr><td>product-design 产出者</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>具体 builder</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>CPO</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>其他联创</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>soul team</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+              <tr><td>交互工程师</td><td><span class="tag-inline required">强共识 · 必须参与</span></td></tr>
+            </tbody>
+          </table>
+          <p><strong>评审维度：</strong></p>
+          <ul>
+            <li>实现是否符合设计</li>
+            <li>体验是否跑偏</li>
+            <li>有无偷工减料</li>
+          </ul>
+          <div class="reject">
+            <strong>不通过：</strong>打回修改，重新提交 Review 2
+          </div>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="flow-arrow">
+        <div class="line"></div>
+        <span class="arrow-label">通过</span>
+        <svg viewBox="0 0 10 10"><path d="M5 0 L10 5 L5 10 L5 7 L0 7 L0 3 L5 3 Z" transform="rotate(90 5 5)"/></svg>
+      </div>
+
+      <!-- Node 5: 上线 -->
+      <div class="flow-node" id="node-ship">
+        <div class="node-box" onclick="toggleNode('node-ship')">
+          <div class="node-header">
+            <div class="node-icon ship">S</div>
+            <div>
+              <div class="node-title">上线</div>
+              <div class="node-subtitle">ship it</div>
+            </div>
+            <span class="expand-hint">▸ 展开</span>
+          </div>
+        </div>
+        <div class="node-detail">
+          <p>通过 Review 2 后正式上线。</p>
+        </div>
+      </div>
+
+      <!-- Arrow -->
+      <div class="flow-arrow">
+        <div class="line"></div>
+        <span class="arrow-label">N 天后</span>
+        <svg viewBox="0 0 10 10"><path d="M5 0 L10 5 L5 10 L5 7 L0 7 L0 3 L5 3 Z" transform="rotate(90 5 5)"/></svg>
+      </div>
+
+      <!-- Node 6: 复盘 -->
+      <div class="flow-node" id="node-retro">
+        <div class="node-box" onclick="toggleNode('node-retro')">
+          <div class="node-header">
+            <div class="node-icon retro">⟲</div>
+            <div>
+              <div class="node-title">复盘 · 轻度节点</div>
+              <div class="node-subtitle">一句话记录结果</div>
+            </div>
+            <span class="expand-hint">▸ 展开</span>
+          </div>
+        </div>
+        <div class="node-detail">
+          <p>上线后 N 天，一句话记录：<strong>上线结果是否符合预期</strong></p>
+          <ul>
+            <li>符合预期 → 闭环</li>
+            <li>不符合预期 → 追溯是设计问题还是实现问题</li>
+          </ul>
+        </div>
+      </div>
+
+    </div><!-- .flow -->
+  </div><!-- .flow-container -->
+</section>
+
+<!-- ============================================================
+     SECTION 2: 文档格式规范
+     ============================================================ -->
+<section id="format">
+  <h2>二 · product-design.html 格式规范</h2>
+
+  <div class="callout neutral">
+    product-design.html 是<strong>自包含的可交互设计文档</strong>，不是 PRD、不是 Figma 截图。浏览器直接打开即可完整阅读。
+  </div>
+
+  <div class="spec-cards">
+
+    <!-- Card 1: Hero -->
+    <div class="spec-card">
+      <div class="card-header">
+        <span class="card-num">01</span>
+        <h3>Hero · 定位宣言</h3>
+      </div>
+      <div class="card-body">
+        <ul>
+          <li><strong>一句话核心主张</strong> — 这个设计是什么、解决什么问题</li>
+          <li><strong>版本号 + 日期</strong> — 明确文档时间线</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Card 2: 设计原则 -->
+    <div class="spec-card">
+      <div class="card-header">
+        <span class="card-num">02</span>
+        <h3>设计原则</h3>
+      </div>
+      <div class="card-body">
+        <p>每条原则用<strong>四字段</strong>写清楚：</p>
+        <table class="field-table">
+          <thead><tr><th>字段</th><th>说明</th></tr></thead>
+          <tbody>
+            <tr><td><strong>含义</strong></td><td>这个词/概念是什么</td></tr>
+            <tr><td><strong>具体表现</strong></td><td>UI/UX 上的落点，用户看到什么、能做什么</td></tr>
+            <tr><td><strong>对比</strong></td><td>与竞品或现有方案的差异</td></tr>
+            <tr><td><strong>为什么这样做</strong></td><td>决策背后的逻辑</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Card 3: 交互 Mockup -->
+    <div class="spec-card">
+      <div class="card-header">
+        <span class="card-num">03</span>
+        <h3>交互 Mockup</h3>
+      </div>
+      <div class="card-body">
+        <ul>
+          <li>HTML 直接渲染，<strong>不是截图或链接</strong></li>
+          <li>每个 Mockup 下方有 Caption</li>
+          <li>Caption 标注设计意图，<strong>主动说明删掉了什么</strong></li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Card 4: Tradeoff -->
+    <div class="spec-card">
+      <div class="card-header">
+        <span class="card-num">04</span>
+        <h3>Tradeoff</h3>
+      </div>
+      <div class="card-body">
+        <p>每个设计决策写清楚两面：</p>
+        <ul>
+          <li><strong>我们做什么</strong> — 选了哪个方案，怎么实现</li>
+          <li><strong>alternative</strong> — 另一个选项是什么，它的问题是什么，为什么没选</li>
+        </ul>
+        <div class="tradeoff-example">
+          <div class="chosen">
+            <div class="label">我们做什么</div>
+            <p><strong>无 sidebar，sessions 走 <kbd>⌘O</kbd></strong> — 用 Command Palette 召唤，用完即关</p>
+          </div>
+          <div class="alt">
+            <div class="label">alternative</div>
+            <p><strong>常驻 sidebar</strong> — 永久占用横向空间，和"零持久 chrome"的设计精神冲突</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 5: 待决问题 -->
+    <div class="spec-card">
+      <div class="card-header">
+        <span class="card-num">05</span>
+        <h3>待决问题（Decisions to Make）</h3>
+      </div>
+      <div class="card-body">
+        <ul>
+          <li><strong>独立成章</strong>，不混入已决策的内容</li>
+          <li>每个问题列出<strong>两个选项</strong>及各自的 tradeoff</li>
+          <li>不是光提问，是"<strong>带答案选项的待决问题</strong>"</li>
+        </ul>
+      </div>
+    </div>
+
+  </div><!-- .spec-cards -->
+</section>
+
+<!-- ============================================================
+     SECTION 3: 准入门槛 Checklist
+     ============================================================ -->
+<section id="checklist">
+  <h2>三 · 进入 Review 1 的最低门槛</h2>
+
+  <div class="callout">
+    以下 Checklist 全部满足方可进入设计评审。缺一不可。
+  </div>
+
+  <ul class="checklist">
+    <li>
+      <span class="ck">☐</span>
+      Hero 清晰，定位明确
+    </li>
+    <li>
+      <span class="ck">☐</span>
+      至少一个可在浏览器渲染的交互 Mockup
+    </li>
+    <li>
+      <span class="ck">☐</span>
+      每个设计决策有 Tradeoff 说明
+    </li>
+    <li>
+      <span class="ck">☐</span>
+      待决问题已列出（带选项 + tradeoff）
+    </li>
+  </ul>
+</section>
+
+</main>
+
+<!-- ============================================================
+     SCRIPTS
+     ============================================================ -->
+<script>
+// Theme switching
+function setTheme(theme) {
+  document.body.setAttribute('data-theme', theme);
+  document.querySelectorAll('.theme-picker button').forEach(btn => {
+    btn.classList.toggle('on', btn.textContent.toLowerCase().includes(theme.split('-')[0]) ||
+      (theme === 'cola-dark' && btn.textContent === 'Cola') ||
+      (theme === 'tokyo-night' && btn.textContent === 'Tokyo') ||
+      (theme === 'solarized-dark' && btn.textContent === 'Solar') ||
+      (theme === 'gruvbox-dark' && btn.textContent === 'Gruvbox') ||
+      (theme === 'light' && btn.textContent === 'Light')
+    );
+  });
+  localStorage.setItem('proc-theme', theme);
+}
+
+// Restore theme
+(function() {
+  const saved = localStorage.getItem('proc-theme');
+  if (saved) setTheme(saved);
+})();
+
+// Flow node expand/collapse
+function toggleNode(id) {
+  const node = document.getElementById(id);
+  const wasActive = node.classList.contains('active');
+
+  // Collapse all
+  document.querySelectorAll('.flow-node').forEach(n => {
+    n.classList.remove('active');
+    n.querySelector('.expand-hint').textContent = '▸ 展开';
+  });
+
+  // Toggle clicked
+  if (!wasActive) {
+    node.classList.add('active');
+    node.querySelector('.expand-hint').textContent = '▾ 收起';
+  }
+}
+
+// Smooth scroll for nav
+document.querySelectorAll('.doc-top nav a').forEach(a => {
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(a.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+});
+</script>
+
+</body>
+</html>
